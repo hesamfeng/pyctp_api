@@ -28,11 +28,31 @@
 *.pyc
 dist/
 build/
+builddir/
 vnpy_ctp.egg-info/
 __pycache__/
+*.con
 
-# Visual Studio
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# IDEs and Editors
 .vs/
-x64/
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
 
+# OS
 .DS_Store
+Thumbs.db
+
+# Test and Cache
+.pytest_cache/
+.cache/
+
+# Temporary files
+x64/

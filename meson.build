@@ -1,7 +1,7 @@
 project(
-  'vnpy_ctp',
+  'pyctp_api',
   'cpp',
-  version: '6.7.7.2',
+  version: '1.0.0',
   license: 'MIT',
   meson_version: '>=1.7.0',
   default_options: [
@@ -28,156 +28,142 @@ compiler_id = cpp.get_id()
 # 输出构建目标系统信息
 message('构建目标系统: ' + host_machine.system())
 
-# 初始化变量
-thostmduserapi_lib = []
-thosttraderapi_lib = []
-extra_cpp_args = []
-extra_link_args = []
-
-# 初始化库变量
-thostmduserapi_lib = []
-thosttraderapi_lib = []
-
-# 初始化其他编译选项
-extra_link_args = []
-install_rpath_value = ''
-
-# 设置Windows特定编译选项
+# Windows配置
 if host_machine.system() == 'windows'
-  # Windows编译器设置
-  add_project_arguments('/MT', language : 'cpp')
+  message('配置Windows环境...')
   
-  # 设置库目录
-  lib_dir = meson.current_source_dir() / 'vnpy_ctp/api/libs'
-  api_dir = meson.current_source_dir() / 'vnpy_ctp/api'
+  # Windows库文件夹路径
+  lib_dir = meson.current_source_dir() / 'pyctp_api/api/libs'
+  api_dir = meson.current_source_dir() / 'pyctp_api/api'
   
-  # 设置include目录
-  include_dirs = include_directories(
-    'vnpy_ctp/api/include',
-    'vnpy_ctp/api/vnctp',
-    pybind11_include_dir,
+  # 包含路径
+  incdir = include_directories(
+    'pyctp_api/api/include',
+    'pyctp_api/api/vnctp',
   )
   
-  # 定义CTP库
-  thostmduserapi_lib = cpp.find_library('thostmduserapi_se', 
-                                       dirs: [lib_dir, api_dir],
-                                       required: true)
-  thosttraderapi_lib = cpp.find_library('thosttraderapi_se', 
-                                       dirs: [lib_dir, api_dir],
-                                       required: true)
-                                       
-# 设置Mac特定编译选项
+  # Windows链接库
+  if cpp.sizeof('void*') == 8  # 64位
+    link_args = [
+      lib_dir / 'thosttraderapi_se.lib',
+      lib_dir / 'thostmduserapi_se.lib'
+    ]
+  else  # 32位
+    error('暂不支持32位Windows')
+  endif
+  
+  # Windows编译参数
+  cpp_args = [
+    '-I' + pybind11_include_dir,
+    '/DWIN32',
+    '/D_WINDOWS',
+    '/EHsc',
+    '/bigobj'
+  ]
+  
+  link_args += []
+
+# Mac配置
 elif host_machine.system() == 'darwin'
-  # Mac编译器设置
-  extra_cpp_args = [
-    '-std=c++11',
-    '-mmacosx-version-min=10.12',
+  message('配置Mac环境...')
+  
+  # Mac库文件夹路径
+  lib_dir = meson.current_source_dir() / 'pyctp_api/api/libs'
+  api_dir = meson.current_source_dir() / 'pyctp_api/api'
+  
+  # 包含路径
+  incdir = include_directories(
+    'pyctp_api/api/include/mac',
+    'pyctp_api/api/vnctp',
+  )
+  
+  # Mac链接参数
+  link_args = [
+    '-F', meson.current_source_dir() / 'pyctp_api/api',
+    '-framework', 'thostmduserapi_se',
+    '-rpath', '@loader_path/../../pyctp_api/api'
   ]
   
-  # 设置链接参数，包括@rpath到@loader_path的修改
-  extra_link_args = [
-    '-mmacosx-version-min=10.12',
-    '-Wl,-rpath,@loader_path',
+  link_args_td = [
+    '-F', meson.current_source_dir() / 'pyctp_api/api',
+    '-framework', 'thosttraderapi_se',
+    '-rpath', '@loader_path/../../pyctp_api/api'
   ]
   
-  # 设置库目录
-  lib_dir = meson.current_source_dir() / 'vnpy_ctp/api/libs'
-  api_dir = meson.current_source_dir() / 'vnpy_ctp/api'
-
-  # 设置include目录
-  include_dirs = include_directories(
-    'vnpy_ctp/api/include/mac',
-    'vnpy_ctp/api/vnctp',
-    pybind11_include_dir,
-  )
-  
-  # 定义Mac Framework依赖
-  thostmduserapi_lib = declare_dependency(
-    dependencies: [py_dep],
-    link_args: [
-      '-F', meson.current_source_dir() / 'vnpy_ctp/api',
-      '-framework', 'thostmduserapi_se'
-    ]
-  )
-  
-  thosttraderapi_lib = declare_dependency(
-    dependencies: [py_dep],
-    link_args: [
-      '-F', meson.current_source_dir() / 'vnpy_ctp/api',
-      '-framework', 'thosttraderapi_se'
-    ]
-  )
-
-# 设置Linux特定编译选项
-else  # Linux
-  # Linux编译器设置
-  extra_cpp_args = [
+  # Mac编译参数
+  cpp_args = [
+    '-I' + pybind11_include_dir,
     '-std=c++17',
-    '-O3',
-    '-Wno-delete-incomplete',
-    '-Wno-sign-compare',
+    '-fvisibility=hidden'
   ]
+
+# Linux配置
+else
+  message('配置Linux环境...')
   
-  extra_link_args = [
-    '-lstdc++',
-    '-Wl,-rpath,$ORIGIN',  # 添加rpath设置，使库能在运行时找到同目录下的动态库
-  ]
+  # 检查架构
+  target_arch = host_machine.cpu_family()
+  message('目标架构: ' + target_arch)
   
-  # 设置库目录
-  lib_dir = meson.current_source_dir() / 'vnpy_ctp/api'
+  if target_arch != 'x86_64'
+    error('仅支持x86_64架构')
+  endif
   
-  # 设置include目录
-  include_dirs = include_directories(
-    'vnpy_ctp/api/include',
-    'vnpy_ctp/api/vnctp',
-    pybind11_include_dir,
+  # Linux库文件夹路径
+  lib_dir = meson.current_source_dir() / 'pyctp_api/api'
+  
+  # 包含路径
+  incdir = include_directories(
+    'pyctp_api/api/include',
+    'pyctp_api/api/vnctp',
   )
   
-  # 定义CTP库
-  thostmduserapi_lib = cpp.find_library('thostmduserapi_se', 
-                                       dirs: [lib_dir],
-                                       required: true)
-  thosttraderapi_lib = cpp.find_library('thosttraderapi_se', 
-                                       dirs: [lib_dir],
-                                       required: true)
+  # Linux链接库
+  link_args = [
+    '-Wl,-rpath,${ORIGIN}',
+    lib_dir / 'libthostmduserapi_se.so',
+    lib_dir / 'libthosttraderapi_se.so',
+  ]
+  
+  # Linux编译参数
+  cpp_args = [
+    '-I' + pybind11_include_dir,
+    '-fvisibility=hidden'
+  ]
 endif
 
-# 创建MD模块扩展
-md_module = py.extension_module(
+# 构建MD API模块
+vnctpmd = py.extension_module(
   'vnctpmd',
-  sources: ['vnpy_ctp/api/vnctp/vnctpmd/vnctpmd.cpp'],
-  include_directories: include_dirs,
-  dependencies: [py_dep, thostmduserapi_lib],
-  cpp_args: extra_cpp_args,
-  link_args: extra_link_args,
-  install: true,
-  subdir: 'vnpy_ctp/api'
+  sources: ['pyctp_api/api/vnctp/vnctpmd/vnctpmd.cpp'],
+  include_directories: incdir,
+  dependencies: py_dep,
+  cpp_args: cpp_args,
+  link_args: host_machine.system() == 'darwin' ? link_args : link_args,
+  subdir: 'pyctp_api/api'
 )
 
-# 创建TD模块扩展
-td_module = py.extension_module(
+# 构建TD API模块
+vnctptd = py.extension_module(
   'vnctptd',
-  sources: ['vnpy_ctp/api/vnctp/vnctptd/vnctptd.cpp'],
-  include_directories: include_dirs,
-  dependencies: [py_dep, thosttraderapi_lib],
-  cpp_args: extra_cpp_args,
-  link_args: extra_link_args,
-  install: true,
-  subdir: 'vnpy_ctp/api'
+  sources: ['pyctp_api/api/vnctp/vnctptd/vnctptd.cpp'],
+  include_directories: incdir,
+  dependencies: py_dep,
+  cpp_args: cpp_args,
+  link_args: host_machine.system() == 'darwin' ? link_args_td : link_args,
+  subdir: 'pyctp_api/api'
 )
 
-# 安装Python源代码
+# 安装Python文件
 python_files = [
-  ['vnpy_ctp/__init__.py', 'vnpy_ctp'],
-  ['vnpy_ctp/api/__init__.py', 'vnpy_ctp/api'],
-  ['vnpy_ctp/api/ctp_constant.py', 'vnpy_ctp/api'],
-  ['vnpy_ctp/gateway/__init__.py', 'vnpy_ctp/gateway'],
-  ['vnpy_ctp/gateway/ctp_gateway.py', 'vnpy_ctp/gateway'],
+  ['pyctp_api/__init__.py', 'pyctp_api'],
+  ['pyctp_api/api/__init__.py', 'pyctp_api/api'],
+  ['pyctp_api/api/ctp_constant.py', 'pyctp_api/api'],
 ]
 
 foreach file : python_files
   py.install_sources(
-    [file[0]],
+    file[0],
     pure: false,
     subdir: file[1]
   )
@@ -186,33 +172,33 @@ endforeach
 # 安装API动态库文件
 if host_machine.system() == 'windows'
   api_libs = [
-    'vnpy_ctp/api/thostmduserapi_se.dll',
-    'vnpy_ctp/api/thosttraderapi_se.dll',
+    'pyctp_api/api/thostmduserapi_se.dll',
+    'pyctp_api/api/thosttraderapi_se.dll',
   ]
   
   install_data(
     api_libs,
-    install_dir: py.get_install_dir() / 'vnpy_ctp/api'
+    install_dir: py.get_install_dir() / 'pyctp_api/api'
   )
 elif host_machine.system() == 'darwin'
   # 安装Mac Framework文件夹
   install_subdir(
-    'vnpy_ctp/api/thostmduserapi_se.framework',
-    install_dir: py.get_install_dir() / 'vnpy_ctp/api'
+    'pyctp_api/api/thostmduserapi_se.framework',
+    install_dir: py.get_install_dir() / 'pyctp_api/api'
   )
   
   install_subdir(
-    'vnpy_ctp/api/thosttraderapi_se.framework',
-    install_dir: py.get_install_dir() / 'vnpy_ctp/api'
+    'pyctp_api/api/thosttraderapi_se.framework',
+    install_dir: py.get_install_dir() / 'pyctp_api/api'
   )
 else  # Linux
   api_libs = [
-    'vnpy_ctp/api/libthostmduserapi_se.so',
-    'vnpy_ctp/api/libthosttraderapi_se.so',
+    'pyctp_api/api/libthostmduserapi_se.so',
+    'pyctp_api/api/libthosttraderapi_se.so',
   ]
   
   install_data(
     api_libs,
-    install_dir: py.get_install_dir() / 'vnpy_ctp/api'
+    install_dir: py.get_install_dir() / 'pyctp_api/api'
   )
 endif
