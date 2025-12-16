@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+配置文件模板
+复制此文件为 config.py 并填入您的真实信息
+"""
+
+# SimNow 模拟账户配置
+SIMNOW_CONFIG = {
+    "用户名": "your_simnow_username",    # 请替换为您的SimNow用户名
+    "密码": "your_simnow_password",      # 请替换为您的SimNow密码
+    "经纪商代码": "9999",                 # SimNow默认经纪商代码
+    "交易服务器": "tcp://182.254.243.31:30001",
+    "行情服务器": "tcp://182.254.243.31:30011",
+    "产品名称": "simnow_client_test",
+    "授权编码": "0000000000000000",
+    "产品信息": ""
+}
+
+# 实盘账户配置（如需要）
+REAL_ACCOUNT_CONFIG = {
+    "用户名": "your_real_username",
+    "密码": "your_real_password",
+    "经纪商代码": "your_broker_id",
+    "交易服务器": "tcp://your_broker_server:port",
+    "行情服务器": "tcp://your_broker_server:port",
+    "产品名称": "",
+    "授权编码": "",
+    "产品信息": ""
+}
+
+# 便捷获取当前配置
+def get_config():
+    """获取当前使用的配置"""
+    if USE_CONFIG == "real":
+        return REAL_ACCOUNT_CONFIG
+    else:
+        return SIMNOW_CONFIG

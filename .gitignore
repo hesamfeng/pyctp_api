@@ -1,0 +1,76 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Python
+*.pyc
+dist/
+build/
+builddir/
+vnpy_ctp.egg-info/
+__pycache__/
+*.con
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# IDEs and Editors
+.vs/
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test and Cache
+.pytest_cache/
+.cache/
+
+# Temporary files
+x64/
+
+# 配置文件（包含敏感信息）
+config.py
+
+# 日志文件
+*.log
+
+# 虚拟环境
+ctp_env/
+venv/
+env/
+ENV/
+
+# CTP 二进制文件（需要用户自己下载）
+*.dll
+*.so
+*.dylib
+*.framework/
